@@ -1,1 +1,5 @@
 .jira-env
+data/previous_logs/*
+!data/previous_logs/.gitkeep
+data/*
+!data/.gitkeep
