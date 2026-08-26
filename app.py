@@ -30,6 +30,12 @@ def submit():
     # Define paths
     time_logging_path = os.path.join(DATA_DIR, 'Time Logging.md')
     date_logging_path = os.path.join(DATA_DIR, 'previous_logs', f'{date}.md')
+    
+    if os.path.exists(date_logging_path):
+        return jsonify({
+            "status": "error",
+            "output": f"❌ Error: A log for {date} already exists.\n\nTo submit again, you must delete {date}.md from the previous_logs folder."
+        })
 
     # Write / Overwrite files
     with open(time_logging_path, 'w') as f:
