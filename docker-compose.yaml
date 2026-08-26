@@ -1,0 +1,10 @@
+services:
+  jira-logger:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mounts the local 'data' folder to the container's '/app/data' folder
+      - ./data:/app/data
+      # Optional: Mount the upload script directly so you can edit it without rebuilding the container
+      - ./upload_script.py:/app/upload_script.py

@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jira Time Logger</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .entry { margin-bottom: 10px; }
+        input { padding: 5px; margin-right: 5px; }
+        .delete-btn { 
+            color: white; 
+            background-color: #dc3545; 
+            border: none; 
+            padding: 6px 10px; 
+            cursor: pointer; 
+            border-radius: 3px;
+        }
+        .delete-btn:hover { background-color: #c82333; }
+        #summary { margin: 15px 0; padding: 10px; background: #f8f9fa; display: inline-block; border-radius: 5px; }
+        progress { width: 300px; height: 20px; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <h2>Log Time</h2>
+    <label>Date: </label>
+    <input type="date" id="dateInput"><br>
+
+    <div id="summary">
+        <strong id="totalTimeText">Total logged: 0m / 8h</strong><br>
+        <!-- 480 minutes = 8 hours -->
+        <progress id="timeProgress" max="480" value="0"></progress>
+    </div>
+
+    <div id="entries">
+        <!-- Rows will be injected here -->
+    </div>
+    
+    <button onclick="addEntry()">+ Add Ticket</button>
+    <button onclick="submitData()">Submit</button>
+
+    <script>
+        // Load state from localStorage on startup
+        window.onload = function() {
+            const savedData = localStorage.getItem('jiraTimeState');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                document.getElementById('dateInput').value = data.date || '';
+                if (data.entries && data.entries.length > 0) {
+                    data.entries.forEach(e => addEntry(e.ticket, e.duration, e.desc));
+                } else {
+                    addEntry();
+                }
+            } else {
+                addEntry();
+            }
+            // Auto-save and auto-calculate on any input change
+            document.addEventListener('input', () => {
+                saveState();
+                calculateTotal();
+            });
+            calculateTotal(); // Calculate initial load
+        }
+
+        function addEntry(ticket = '', duration = '', desc = '') {
+            const div = document.createElement('div');
+            div.className = 'entry';
+            div.innerHTML = `
+                <input type="text" placeholder="Ticket (e.g. SCRUM-42)" class="ticket" value="${ticket}">
+                <input type="text" placeholder="Duration (e.g. 1h 30m)" class="duration" value="${duration}">
+                <input type="text" placeholder="Description" class="desc" value="${desc}" size="40">
+                <button class="delete-btn" onclick="removeEntry(this)">X</button>
+            `;
+            document.getElementById('entries').appendChild(div);
+            saveState();
+            calculateTotal();
+        }
+
+        function removeEntry(button) {
+            button.parentElement.remove();
+            saveState();
+            calculateTotal();
+        }
+
+        function saveState() {
+            const entries = Array.from(document.querySelectorAll('.entry')).map(row => ({
+                ticket: row.querySelector('.ticket').value,
+                duration: row.querySelector('.duration').value,
+                desc: row.querySelector('.desc').value
+            }));
+            const data = { date: document.getElementById('dateInput').value, entries };
+            localStorage.setItem('jiraTimeState', JSON.stringify(data));
+        }
+
+        function calculateTotal() {
+            let totalMinutes = 0;
+            const durationInputs = document.querySelectorAll('.duration');
+            
+            durationInputs.forEach(input => {
+                const val = input.value.toLowerCase();
+                let hours = 0;
+                let minutes = 0;
+
+                // Match numbers followed by 'h' or 'm'
+                const hMatch = val.match(/(\d+)\s*h/);
+                const mMatch = val.match(/(\d+)\s*m/);
+
+                if (hMatch) hours = parseInt(hMatch[1], 10);
+                if (mMatch) minutes = parseInt(mMatch[1], 10);
+
+                totalMinutes += (hours * 60) + minutes;
+            });
+
+            // Update Progress Bar
+            document.getElementById('timeProgress').value = totalMinutes;
+
+            // Format text back to Xh Ym
+            const displayHours = Math.floor(totalMinutes / 60);
+            const displayMinutes = totalMinutes % 60;
+            
+            let timeString = "";
+            if (displayHours > 0) timeString += `${displayHours}h `;
+            if (displayMinutes > 0 || (displayHours === 0)) timeString += `${displayMinutes}m`;
+
+            document.getElementById('totalTimeText').innerText = `Total logged: ${timeString.trim()} / 8h`;
+        }
+
+        async function submitData() {
+            const date = document.getElementById('dateInput').value;
+            const entries = Array.from(document.querySelectorAll('.entry'))
+                .map(row => ({
+                    ticket: row.querySelector('.ticket').value,
+                    duration: row.querySelector('.duration').value,
+                    desc: row.querySelector('.desc').value
+                })).filter(e => e.ticket); 
+
+            if (!date || entries.length === 0) {
+                alert("Please select a date and enter at least one ticket.");
+                return;
+            }
+
+            const response = await fetch('/submit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ date, entries })
+            });
+
+            if (response.ok) {
+                alert("Submitted successfully!");
+                localStorage.removeItem('jiraTimeState');
+                document.getElementById('dateInput').value = '';
+                document.getElementById('entries').innerHTML = '';
+                addEntry(); 
+            } else {
+                alert("Error submitting data.");
+            }
+        }
+    </script>
+</body>
+</html>
