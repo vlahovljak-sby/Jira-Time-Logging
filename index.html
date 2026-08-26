@@ -36,6 +36,9 @@
     
     <button onclick="addEntry()">+ Add Ticket</button>
     <button onclick="submitData()">Submit</button>
+    
+    <!-- Added to show script logs -->
+    <pre id="logOutput" style="margin-top: 20px; background: #333; color: #fff; padding: 10px; border-radius: 5px; display: none; max-height: 300px; overflow-y: auto;"></pre>
 
     <script>
         // Load state from localStorage on startup
@@ -123,7 +126,7 @@
             document.getElementById('totalTimeText').innerText = `Total logged: ${timeString.trim()} / 8h`;
         }
 
-        async function submitData() {
+		async function submitData() {
             const date = document.getElementById('dateInput').value;
             const entries = Array.from(document.querySelectorAll('.entry'))
                 .map(row => ({
@@ -137,20 +140,42 @@
                 return;
             }
 
-            const response = await fetch('/submit', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ date, entries })
-            });
+            // Visual feedback while waiting for script to finish
+            const submitBtn = document.querySelector('button[onclick="submitData()"]');
+            submitBtn.innerText = "Submitting to Jira...";
+            submitBtn.disabled = true;
+            
+            const logBox = document.getElementById('logOutput');
+            logBox.style.display = 'none';
+            logBox.innerText = "";
 
-            if (response.ok) {
-                alert("Submitted successfully!");
-                localStorage.removeItem('jiraTimeState');
-                document.getElementById('dateInput').value = '';
-                document.getElementById('entries').innerHTML = '';
-                addEntry(); 
-            } else {
-                alert("Error submitting data.");
+            try {
+                const response = await fetch('/submit', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ date, entries })
+                });
+
+                const result = await response.json();
+
+                // Show the script output in the pre block
+                logBox.style.display = 'block';
+                logBox.innerText = result.output || "No output returned.";
+
+                if (response.ok && result.status === 'success') {
+                    localStorage.removeItem('jiraTimeState');
+                    document.getElementById('dateInput').value = '';
+                    document.getElementById('entries').innerHTML = '';
+                    addEntry(); 
+                    calculateTotal();
+                } else {
+                    alert("There was a problem executing the script. Check logs below.");
+                }
+            } catch (err) {
+                alert("Server error.");
+            } finally {
+                submitBtn.innerText = "Submit";
+                submitBtn.disabled = false;
             }
         }
     </script>

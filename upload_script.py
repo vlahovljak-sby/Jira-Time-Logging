@@ -6,6 +6,7 @@ import base64
 import urllib.request
 from urllib.error import HTTPError, URLError
 from datetime import datetime
+import random
 
 # ==========================================
 # CONFIGURATION
@@ -119,21 +120,14 @@ headers = {
 # ==========================================
 # READ FILE LINE BY LINE
 # ==========================================
+has_errors = False  # <--- ADD THIS FLAG
+
 # Skip the first line (date)
 for line in lines[1:]:
     line = line.strip()
-    
-    # Skip empty lines
     if not line:
         continue
 
-    # ==========================================
-    # PARSE WORKLOG LINE
-    # Supported format:
-    # [TICKET-123] - 1h - Description
-    # [TICKET-123] - 30m - Description
-    # # [TICKET-123] - 1h 30m - Description
-    # ==========================================
     match = re.match(r'^#*\s*\[([A-Z]+-[0-9]+)\]\s*-\s*([0-9]+[mhd](?:\s*[0-9]+[mhd])*)\s*-\s*(.*)$', line)
     
     if match:
@@ -143,20 +137,13 @@ for line in lines[1:]:
 
         print(f"\nLogging {time_spent} to {ticket}: '{comment}'...")
 
-        # ==========================================
-        # CREATE JSON PAYLOAD
-        # ==========================================
         payload = {
             "timeSpent": time_spent,
             "started": started,
             "comment": comment
         }
-        
         payload_data = json.dumps(payload).encode('utf-8')
 
-        # ==========================================
-        # JIRA API REQUEST
-        # ==========================================
         jira_url = f"{jira_domain}/rest/api/2/issue/{ticket}/worklog"
         req = urllib.request.Request(jira_url, data=payload_data, headers=headers, method='POST')
 
@@ -166,20 +153,25 @@ for line in lines[1:]:
                     print(f"✅ Successfully logged work for {ticket}.")
                 else:
                     print(f"❌ Failed to log work for {ticket}. HTTP Status: {response.getcode()}")
+                    has_errors = True
         except HTTPError as e:
             error_body = e.read().decode('utf-8')
             print(f"❌ Failed to log work for {ticket}. HTTP Status: {e.code}")
             print(f"   Jira Error: {error_body}")
+            has_errors = True
         except Exception as e:
             print(f"❌ Failed to log work for {ticket}. Error: {str(e)}")
+            has_errors = True
 
     else:
-        # Regex mismatch
         print(f"⚠️ Skipping line (Regex mismatch): '{line}'")
 
 # ==========================================
 # FINISH
 # ==========================================
-print("\nDone.")
-# Note: Replaced 'Press Enter to exit' with a passive completion print since 
-# standard input prompts will freeze background processes like Docker triggers.
+if has_errors:
+    print("\nCompleted with errors.")
+    sys.exit(1)
+else:
+    print("\nDone. All successful!")
+    sys.exit(0)
