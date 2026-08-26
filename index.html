@@ -61,6 +61,8 @@
                 calculateTotal();
             });
             calculateTotal(); // Calculate initial load
+			
+			document.getElementById('dateInput').valueAsDate = new Date();
         }
 
         function addEntry(ticket = '', duration = '', desc = '') {
