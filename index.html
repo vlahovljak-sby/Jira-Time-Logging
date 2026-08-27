@@ -22,6 +22,15 @@
 </head>
 <body>
     <h2>Log Time</h2>
+	<!-- General Scratchpad (Sticky Note) -->
+    <details style="margin-bottom: 20px; max-width: 522px;">
+        <summary style="cursor: pointer; font-weight: bold; color: #856404; margin-bottom: 5px; user-select: none;">
+            📝 General Scratchpad
+        </summary>
+        <textarea id="stickyNotes" placeholder="Current tickets, who is doing what, etc. (This never deletes automatically...)" 
+        style="width: 100%; box-sizing: border-box; height: 100px; padding: 10px; background-color: #fff9c4; border: 1px solid #fbc02d; border-radius: 4px; font-family: sans-serif; resize: vertical; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); display: block;"></textarea>
+    </details>
+    <br>
     <label>Date: </label>
     <input type="date" id="dateInput"><br>
 
@@ -63,6 +72,13 @@
     <script>
         // Load state from localStorage on startup
         window.onload = function() {
+			const stickyBox = document.getElementById('stickyNotes');
+			stickyBox.value = localStorage.getItem('jiraStickyNotes') || '';
+
+				// Auto-save sticky notes on every single keystroke
+			stickyBox.addEventListener('input', function() {
+				localStorage.setItem('jiraStickyNotes', this.value);
+			});
             const savedData = localStorage.getItem('jiraTimeState');
             if (savedData) {
                 const data = JSON.parse(savedData);
