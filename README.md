@@ -19,13 +19,17 @@ Write down most common tickets you're working and reviewing right now, write dow
 
 Date is prefilled to today's date by default. Besides logging time on tickets, there's a textbox below the list of tickets where you can write down notes for that day.
 
-> :information_source: Notes textbox content is saved locally and is not sent to Jira  
-> :information_source: Everything that you've written is preserved accross the tab closing and re-opening. Textboxes are emptied out only upon submitting the log for that day (General Scratchpad is an exception, it's never cleared automatically)  
-> :information_source: Only date, tickets, their durations and descriptions are sent to Jira  
 > :warning: For a certain date, you can log the time only once  
+
+> :information_source: Daily notes textbox content is saved locally and is not sent to Jira  
+> :information_source: Everything that you've written is preserved accross the tab closing and re-opening. Textboxes are emptied out only upon submitting the log for that day (General Scratchpad is an exception, it's never cleared automatically)  
 
 Once the data is filled, click the submit button and data will be sent to Jira. Result of the script execution will be shown below the submit button. 
 
 ### View Previous Logs
 
 You can view all the logs and the notes for previously logged days. You can either view the data for a specific day, or last 10 logs.
+
+### Data Storage
+
+All data is stored in *./data* and *./data/previous_logs* in the root directory of the project.
