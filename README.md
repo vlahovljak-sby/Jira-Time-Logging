@@ -22,7 +22,7 @@ Date is prefilled to today's date by default. Besides logging time on tickets, t
 > :warning: For a certain date, you can log the time only once  
 
 > :information_source: Daily notes textbox content is saved locally and is not sent to Jira  
-> :information_source: Everything that you've written is preserved accross the tab closing and re-opening. Textboxes are emptied out only upon submitting the log for that day (General Scratchpad is an exception, it's never cleared automatically)  
+> :information_source: Everything that you've written is preserved accross the tab/app closing and re-opening. If you accidentally close the tab/app, all of the data will be restored
 
 Once the data is filled, click the submit button and data will be sent to Jira. Result of the script execution will be shown below the submit button. 
 
