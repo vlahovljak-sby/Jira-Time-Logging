@@ -20,6 +20,7 @@ def submit():
     data = request.json
     date = data.get('date')
     entries = data.get('entries', [])
+    notes = data.get('notes', '').strip()
 
     if not date or not entries:
         return jsonify({"error": "Missing data"}), 400
@@ -30,6 +31,9 @@ def submit():
     content = f"{date}\n\n"
     for entry in entries:
         content += f"[{entry['ticket']}] - {entry['duration']} - {entry['desc']}\n"
+        
+    if notes:
+        content += f"\n---\n\n{notes}\n"
 
     # Define paths
     time_logging_path = os.path.join(DATA_DIR, 'Time Logging.md')

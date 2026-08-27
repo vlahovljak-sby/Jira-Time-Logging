@@ -34,6 +34,10 @@
     <div id="entries">
         <!-- Rows will be injected here -->
     </div>
+	
+	<textarea id="dailyNotes" placeholder="Daily notes (ignored by Jira script)..." rows="4" style="width: 100%; max-width: 500px; margin: 15px 0; padding: 10px; display: block; font-family: sans-serif;"></textarea>
+    
+    <button onclick="addEntry()">+ Add Ticket</button>
     
     <button onclick="addEntry()">+ Add Ticket</button>
     <button onclick="submitData()">Submit</button>
@@ -47,6 +51,8 @@
             const savedData = localStorage.getItem('jiraTimeState');
             if (savedData) {
                 const data = JSON.parse(savedData);
+                document.getElementById('dateInput').value = data.date || '';
+                document.getElementById('dailyNotes').value = data.notes || ''; // Load notes
                 document.getElementById('dateInput').value = data.date || '';
                 if (data.entries && data.entries.length > 0) {
                     data.entries.forEach(e => addEntry(e.ticket, e.duration, e.desc));
@@ -92,7 +98,8 @@
                 duration: row.querySelector('.duration').value,
                 desc: row.querySelector('.desc').value
             }));
-            const data = { date: document.getElementById('dateInput').value, entries };
+            const notes = document.getElementById('dailyNotes').value; // Get notes
+            const data = { date: document.getElementById('dateInput').value, entries, notes }; // Add to object
             localStorage.setItem('jiraTimeState', JSON.stringify(data));
         }
 
@@ -131,6 +138,7 @@
 
 		async function submitData() {
             const date = document.getElementById('dateInput').value;
+			const notes = document.getElementById('dailyNotes').value;
             const entries = Array.from(document.querySelectorAll('.entry'))
                 .map(row => ({
                     ticket: row.querySelector('.ticket').value,
@@ -156,7 +164,7 @@
                 const response = await fetch('/submit', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ date, entries })
+                    body: JSON.stringify({ date, entries, notes }) // Send notes
                 });
 
                 const result = await response.json();
@@ -169,6 +177,7 @@
                     localStorage.removeItem('jiraTimeState');
                     document.getElementById('dateInput').value = '';
                     document.getElementById('entries').innerHTML = '';
+					document.getElementById('dailyNotes').value = '';
                     addEntry(); 
                     calculateTotal();
                 } else {

@@ -130,6 +130,10 @@ for line in lines[1:]:
 
     match = re.match(r'^#*\s*\[([A-Z]+-[0-9]+)\]\s*-\s*([0-9]+[mhd](?:\s*[0-9]+[mhd])*)\s*-\s*(.*)$', line)
     
+    if line.startswith('---'):
+        print("Reached notes section. Stopping ticket parsing.")
+        break
+    
     if match:
         ticket = match.group(1)
         time_spent = match.group(2)
