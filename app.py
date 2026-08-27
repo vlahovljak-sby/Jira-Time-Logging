@@ -14,6 +14,35 @@ def index():
 @app.route('/favicon.svg')
 def favicon():
     return send_file('favicon.svg', mimetype='image/svg+xml')
+    
+@app.route('/history', methods=['GET'])
+def history():
+    search_date = request.args.get('date')
+    previous_logs_dir = os.path.join(DATA_DIR, 'previous_logs')
+    
+    if not os.path.exists(previous_logs_dir):
+        return jsonify([])
+
+    # Get all .md files and sort them descending (newest first)
+    files = [f for f in os.listdir(previous_logs_dir) if f.endswith('.md')]
+    files.sort(reverse=True)
+
+    results = []
+    
+    if search_date:
+        # If user searched for a date, look for exactly that file
+        target_file = f"{search_date}.md"
+        if target_file in files:
+            with open(os.path.join(previous_logs_dir, target_file), 'r') as f:
+                results.append({"date": search_date, "content": f.read()})
+    else:
+        # If no search date, grab the top 10 most recent files
+        for f_name in files[:10]:
+            date_str = f_name.replace('.md', '')
+            with open(os.path.join(previous_logs_dir, f_name), 'r') as f:
+                results.append({"date": date_str, "content": f.read()})
+                
+    return jsonify(results)
 
 @app.route('/submit', methods=['POST'])
 def submit():
