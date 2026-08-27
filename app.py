@@ -10,6 +10,10 @@ SCRIPT_PATH = '/app/upload_script.py' # You can change this to a .sh script if y
 @app.route('/')
 def index():
     return send_file('index.html')
+    
+@app.route('/favicon.svg')
+def favicon():
+    return send_file('favicon.svg', mimetype='image/svg+xml')
 
 @app.route('/submit', methods=['POST'])
 def submit():
