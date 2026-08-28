@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, send_file
 import os
 import subprocess
+import re
 
 app = Flask(__name__)
 
@@ -23,24 +24,49 @@ def history():
     if not os.path.exists(previous_logs_dir):
         return jsonify([])
 
-    # Get all .md files and sort them descending (newest first)
     files = [f for f in os.listdir(previous_logs_dir) if f.endswith('.md')]
     files.sort(reverse=True)
 
     results = []
     
+    # Helper to calculate total time from markdown text
+    def calculate_total(content):
+        total_minutes = 0
+        for line in content.split('\n'):
+            line = line.strip()
+            if line.startswith('---'):  # Stop when we hit notes
+                break
+            
+            # Extract time portion between the first two hyphens
+            match = re.match(r'^#*\s*\[.*?\]\s*-\s*(.*?)\s*-', line)
+            if match:
+                time_str = match.group(1).lower()
+                h_match = re.search(r'(\d+)h', time_str)
+                m_match = re.search(r'(\d+)m', time_str)
+                
+                if h_match: total_minutes += int(h_match.group(1)) * 60
+                if m_match: total_minutes += int(m_match.group(1))
+                
+        hours = total_minutes // 60
+        minutes = total_minutes % 60
+        
+        time_parts = []
+        if hours > 0: time_parts.append(f"{hours}h")
+        if minutes > 0 or hours == 0: time_parts.append(f"{minutes}m")
+        return " ".join(time_parts)
+
     if search_date:
-        # If user searched for a date, look for exactly that file
         target_file = f"{search_date}.md"
         if target_file in files:
             with open(os.path.join(previous_logs_dir, target_file), 'r') as f:
-                results.append({"date": search_date, "content": f.read()})
+                content = f.read()
+                results.append({"date": search_date, "total": calculate_total(content), "content": content})
     else:
-        # If no search date, grab the top 10 most recent files
         for f_name in files[:10]:
             date_str = f_name.replace('.md', '')
             with open(os.path.join(previous_logs_dir, f_name), 'r') as f:
-                results.append({"date": date_str, "content": f.read()})
+                content = f.read()
+                results.append({"date": date_str, "total": calculate_total(content), "content": content})
                 
     return jsonify(results)
 

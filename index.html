@@ -244,24 +244,21 @@
 
                 resultsContainer.innerHTML = '';
                 logs.forEach((log, index) => {
-                    // Using <details> to make each individual log collapsible
                     const logDetails = document.createElement('details');
                     
-                    // Simple styling to make the log stand out
                     logDetails.style.background = '#f4f5f7';
                     logDetails.style.borderLeft = '4px solid #0052cc';
                     logDetails.style.padding = '10px 15px';
                     logDetails.style.marginBottom = '15px';
                     logDetails.style.borderRadius = '3px';
 
-                    // If you searched for a specific date (only 1 result), open it by default
                     if (logs.length === 1) {
                         logDetails.open = true;
                     }
 
                     logDetails.innerHTML = `
                         <summary style="cursor: pointer; font-weight: bold; color: #333; outline: none; user-select: none;">
-                            ${log.date}
+                            ${log.date} <span style="color: #666; font-weight: normal; font-size: 0.9em; margin-left: 5px;">(${log.total})</span>
                         </summary>
                         <pre style="margin: 15px 0 0 0; white-space: pre-wrap; font-family: monospace; color: #444; border-top: 1px solid #ddd; padding-top: 10px;">${log.content}</pre>
                     `;
