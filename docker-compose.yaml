@@ -3,6 +3,7 @@ services:
     build: .
     ports:
       - "5000:5000"
+    restart: unless-stopped
     volumes:
       # Mounts the local 'data' folder to the container's '/app/data' folder
       - ./data:/app/data

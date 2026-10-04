@@ -2,7 +2,7 @@
 <html>
 <head>
     <title>Jira Time Logger</title>
-	<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <style>
         body { font-family: sans-serif; padding: 20px; }
         .entry { margin-bottom: 10px; }
@@ -22,8 +22,8 @@
 </head>
 <body>
     <h2>Log Time</h2>
-	<!-- General Scratchpad (Sticky Note) -->
-    <details style="margin-bottom: 20px; max-width: 522px;">
+    <!-- General Scratchpad (Sticky Note) - Added 'open' attribute -->
+    <details open style="margin-bottom: 20px; max-width: 522px;">
         <summary style="cursor: pointer; font-weight: bold; color: #856404; margin-bottom: 5px; user-select: none;">
             📝 General Scratchpad
         </summary>
@@ -43,16 +43,16 @@
     <div id="entries">
         <!-- Rows will be injected here -->
     </div>
-	
-	<textarea id="dailyNotes" placeholder="Daily notes (ignored by Jira script)..." rows="4" style="width: 100%; max-width: 500px; margin: 15px 0; padding: 10px; display: block; font-family: sans-serif;"></textarea>
+    
+    <textarea id="dailyNotes" placeholder="Daily notes (ignored by Jira script)..." rows="4" style="width: 100%; max-width: 500px; margin: 15px 0; padding: 10px; display: block; font-family: sans-serif;"></textarea>
     
     <button onclick="addEntry()">+ Add Ticket</button>
     <button onclick="submitData()">Submit</button>
     
     <!-- Added to show script logs -->
     <pre id="logOutput" style="margin-top: 20px; background: #333; color: #fff; padding: 10px; border-radius: 5px; display: none; max-height: 300px; overflow-y: auto;"></pre>
-	
-	<details id="historyAccordion" style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee;">
+    
+    <details id="historyAccordion" style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #eee;">
         <summary style="cursor: pointer; font-weight: bold; font-size: 1.1em; color: #0052cc;">
             📂 View Previous Logs
         </summary>
@@ -72,19 +72,18 @@
     <script>
         // Load state from localStorage on startup
         window.onload = function() {
-			const stickyBox = document.getElementById('stickyNotes');
-			stickyBox.value = localStorage.getItem('jiraStickyNotes') || '';
+            const stickyBox = document.getElementById('stickyNotes');
+            stickyBox.value = localStorage.getItem('jiraStickyNotes') || '';
 
-				// Auto-save sticky notes on every single keystroke
-			stickyBox.addEventListener('input', function() {
-				localStorage.setItem('jiraStickyNotes', this.value);
-			});
+            // Auto-save sticky notes on every single keystroke
+            stickyBox.addEventListener('input', function() {
+                localStorage.setItem('jiraStickyNotes', this.value);
+            });
             const savedData = localStorage.getItem('jiraTimeState');
             if (savedData) {
                 const data = JSON.parse(savedData);
                 document.getElementById('dateInput').value = data.date || '';
                 document.getElementById('dailyNotes').value = data.notes || ''; // Load notes
-                document.getElementById('dateInput').value = data.date || '';
                 if (data.entries && data.entries.length > 0) {
                     data.entries.forEach(e => addEntry(e.ticket, e.duration, e.desc));
                 } else {
@@ -99,8 +98,8 @@
                 calculateTotal();
             });
             calculateTotal(); // Calculate initial load
-			
-			document.getElementById('dateInput').valueAsDate = new Date();
+            
+            document.getElementById('dateInput').valueAsDate = new Date();
         }
 
         function addEntry(ticket = '', duration = '', desc = '') {
@@ -167,9 +166,9 @@
             document.getElementById('totalTimeText').innerText = `Total logged: ${timeString.trim()} / 8h`;
         }
 
-		async function submitData() {
+        async function submitData() {
             const date = document.getElementById('dateInput').value;
-			const notes = document.getElementById('dailyNotes').value;
+            const notes = document.getElementById('dailyNotes').value;
             const entries = Array.from(document.querySelectorAll('.entry'))
                 .map(row => ({
                     ticket: row.querySelector('.ticket').value,
@@ -208,7 +207,7 @@
                     localStorage.removeItem('jiraTimeState');
                     document.getElementById('dateInput').value = '';
                     document.getElementById('entries').innerHTML = '';
-					document.getElementById('dailyNotes').value = '';
+                    document.getElementById('dailyNotes').value = '';
                     addEntry(); 
                     calculateTotal();
                 } else {
@@ -221,8 +220,8 @@
                 submitBtn.disabled = false;
             }
         }
-		
-		document.getElementById('historyAccordion').addEventListener('toggle', function(e) {
+        
+        document.getElementById('historyAccordion').addEventListener('toggle', function(e) {
             if (e.target.open) {
                 loadHistory();
             }
@@ -256,9 +255,14 @@
                         logDetails.open = true;
                     }
 
+                    // Extract the day of the week from the date
+                    const [year, month, day] = log.date.split('-');
+                    const dateObj = new Date(year, month - 1, day);
+                    const dayName = dateObj.toLocaleDateString(undefined, { weekday: 'long' });
+
                     logDetails.innerHTML = `
                         <summary style="cursor: pointer; font-weight: bold; color: #333; outline: none; user-select: none;">
-                            ${log.date} <span style="color: #666; font-weight: normal; font-size: 0.9em; margin-left: 5px;">(${log.total})</span>
+                            ${log.date} - ${dayName} <span style="color: #666; font-weight: normal; font-size: 0.9em; margin-left: 5px;">(${log.total})</span>
                         </summary>
                         <pre style="margin: 15px 0 0 0; white-space: pre-wrap; font-family: monospace; color: #444; border-top: 1px solid #ddd; padding-top: 10px;">${log.content}</pre>
                     `;
@@ -268,6 +272,6 @@
                 resultsContainer.innerHTML = '<p style="color: red;">Error loading history.</p>';
             }
         }
-		</script>
+    </script>
 </body>
 </html>
