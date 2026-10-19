@@ -18,13 +18,39 @@
         .delete-btn:hover { background-color: #c82333; }
         #summary { margin: 15px 0; padding: 10px; background: #f8f9fa; display: inline-block; border-radius: 5px; }
         progress { width: 300px; height: 20px; margin-top: 5px; }
+        
+        /* New Button Styles */
+        .btn-add {
+            background-color: #e9ecef;
+            color: #495057;
+            border: 1px solid #ced4da;
+            padding: 6px 12px;
+            cursor: pointer;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+        .btn-add:hover { background-color: #dde0e3; }
+        
+        .btn-submit {
+            background-color: #0052cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 1.05em;
+        }
+        .btn-submit:hover { background-color: #0043a6; }
+        .btn-submit:disabled { background-color: #7a9ccf; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <h2>Log Time</h2>
-    <!-- General Scratchpad (Sticky Note) - Added 'open' attribute -->
-    <details open style="margin-bottom: 20px; max-width: 522px;">
-        <summary style="cursor: pointer; font-weight: bold; color: #856404; margin-bottom: 5px; user-select: none;">
+    <!-- General Scratchpad (Sticky Note) -->
+    <details style="margin-bottom: 20px; max-width: 522px;">
+        <summary open style="cursor: pointer; font-weight: bold; color: #856404; margin-bottom: 5px; user-select: none;">
             📝 General Scratchpad
         </summary>
         <textarea id="stickyNotes" placeholder="Current tickets, who is doing what, etc. (This never deletes automatically...)" 
@@ -44,10 +70,13 @@
         <!-- Rows will be injected here -->
     </div>
     
+    <!-- Moved Add Ticket Button directly under the entries list -->
+    <button class="btn-add" onclick="addEntry()">+ Add Ticket</button>
+    
     <textarea id="dailyNotes" placeholder="Daily notes (ignored by Jira script)..." rows="4" style="width: 100%; max-width: 500px; margin: 15px 0; padding: 10px; display: block; font-family: sans-serif;"></textarea>
     
-    <button onclick="addEntry()">+ Add Ticket</button>
-    <button onclick="submitData()">Submit</button>
+    <!-- Styled Submit Button -->
+    <button class="btn-submit" onclick="submitData()">Submit</button>
     
     <!-- Added to show script logs -->
     <pre id="logOutput" style="margin-top: 20px; background: #333; color: #fff; padding: 10px; border-radius: 5px; display: none; max-height: 300px; overflow-y: auto;"></pre>
@@ -61,7 +90,7 @@
             <label>Search by Date: </label>
             <input type="date" id="searchHistoryDate" onchange="loadHistory()">
             <button onclick="document.getElementById('searchHistoryDate').value=''; loadHistory()">Clear</button>
-            <small style="color: #666; margin-left: 10px;">(Leave empty to see last 10)</small>
+            <small style="color: #666; margin-left: 10px;">(Leave empty to see last 12)</small>
         </div>
         
         <div id="historyResults">
@@ -84,6 +113,7 @@
                 const data = JSON.parse(savedData);
                 document.getElementById('dateInput').value = data.date || '';
                 document.getElementById('dailyNotes').value = data.notes || ''; // Load notes
+                document.getElementById('dateInput').value = data.date || '';
                 if (data.entries && data.entries.length > 0) {
                     data.entries.forEach(e => addEntry(e.ticket, e.duration, e.desc));
                 } else {
@@ -109,7 +139,7 @@
                 <input type="text" placeholder="Ticket (e.g. SCRUM-42)" class="ticket" value="${ticket}">
                 <input type="text" placeholder="Duration (e.g. 1h 30m)" class="duration" value="${duration}">
                 <input type="text" placeholder="Description" class="desc" value="${desc}" size="40">
-                <button class="delete-btn" onclick="removeEntry(this)">X</button>
+                <button class="delete-btn" tabindex="-1" onclick="removeEntry(this)">X</button>
             `;
             document.getElementById('entries').appendChild(div);
             saveState();
@@ -182,7 +212,7 @@
             }
 
             // Visual feedback while waiting for script to finish
-            const submitBtn = document.querySelector('button[onclick="submitData()"]');
+            const submitBtn = document.querySelector('button.btn-submit');
             submitBtn.innerText = "Submitting to Jira...";
             submitBtn.disabled = true;
             

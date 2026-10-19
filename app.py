@@ -39,7 +39,7 @@ def history():
             
             # Extract time portion between the first two hyphens
             match = re.match(r'^#*\s*\[.*?\]\s*-\s*(.*?)\s*-', line)
-            if match:
+            if match:   
                 time_str = match.group(1).lower()
                 h_match = re.search(r'(\d+)h', time_str)
                 m_match = re.search(r'(\d+)m', time_str)
@@ -62,7 +62,7 @@ def history():
                 content = f.read()
                 results.append({"date": search_date, "total": calculate_total(content), "content": content})
     else:
-        for f_name in files[:10]:
+        for f_name in files[:12]:
             date_str = f_name.replace('.md', '')
             with open(os.path.join(previous_logs_dir, f_name), 'r') as f:
                 content = f.read()
