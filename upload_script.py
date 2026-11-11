@@ -118,57 +118,103 @@ headers = {
 }
 
 # ==========================================
-# READ FILE LINE BY LINE
+# PARSE ENTRIES
 # ==========================================
-has_errors = False  # <--- ADD THIS FLAG
+worklog_entries = []
 
-# Skip the first line (date)
 for line in lines[1:]:
     line = line.strip()
     if not line:
         continue
 
-    match = re.match(r'^#*\s*\[([A-Z]+-[0-9]+)\]\s*-\s*([0-9]+[mhd](?:\s*[0-9]+[mhd])*)\s*-\s*(.*)$', line)
-    
     if line.startswith('---'):
         print("Reached notes section. Stopping ticket parsing.")
         break
-    
+
+    match = re.match(r'^#*\s*\[([A-Z]+-[0-9]+)\]\s*-\s*([0-9]+[mhd](?:\s*[0-9]+[mhd])*)\s*-\s*(.*)$', line)
     if match:
-        ticket = match.group(1)
-        time_spent = match.group(2)
-        comment = match.group(3)
-
-        print(f"\nLogging {time_spent} to {ticket}: '{comment}'...")
-
-        payload = {
-            "timeSpent": time_spent,
-            "started": started,
-            "comment": comment
-        }
-        payload_data = json.dumps(payload).encode('utf-8')
-
-        jira_url = f"{jira_domain}/rest/api/2/issue/{ticket}/worklog"
-        req = urllib.request.Request(jira_url, data=payload_data, headers=headers, method='POST')
-
-        try:
-            with urllib.request.urlopen(req) as response:
-                if response.getcode() == 201:
-                    print(f"✅ Successfully logged work for {ticket}.")
-                else:
-                    print(f"❌ Failed to log work for {ticket}. HTTP Status: {response.getcode()}")
-                    has_errors = True
-        except HTTPError as e:
-            error_body = e.read().decode('utf-8')
-            print(f"❌ Failed to log work for {ticket}. HTTP Status: {e.code}")
-            print(f"   Jira Error: {error_body}")
-            has_errors = True
-        except Exception as e:
-            print(f"❌ Failed to log work for {ticket}. Error: {str(e)}")
-            has_errors = True
-
+        worklog_entries.append({
+            "ticket": match.group(1),
+            "timeSpent": match.group(2),
+            "comment": match.group(3)
+        })
     else:
-        print(f"⚠️ Skipping line (Regex mismatch): '{line}'")
+        print(f"❌ Syntax Error: Line does not match expected format:\n   '{line}'")
+        print("Aborting before validation or logging.")
+        sys.exit(1)
+
+if not worklog_entries:
+    print("No worklog entries found to process.")
+    sys.exit(0)
+
+# ==========================================
+# PRE-VALIDATE TICKETS EXISTENCE
+# ==========================================
+unique_tickets = sorted(list({entry['ticket'] for entry in worklog_entries}))
+print(f"\n🔍 Pre-validating {len(unique_tickets)} unique ticket(s)...")
+
+for ticket in unique_tickets:
+    check_url = f"{jira_domain}/rest/api/2/issue/{ticket}?fields=id"
+    req = urllib.request.Request(check_url, headers=headers, method='GET')
+    
+    try:
+        with urllib.request.urlopen(req) as response:
+            if response.getcode() != 200:
+                print(f"❌ Ticket validation failed for '{ticket}'. HTTP Status: {response.getcode()}")
+                print("⛔ Aborting without logging any work.")
+                sys.exit(1)
+    except HTTPError as e:
+        if e.code == 404:
+            print(f"❌ Ticket '{ticket}' does NOT exist in Jira (HTTP 404).")
+        else:
+            error_body = e.read().decode('utf-8')
+            print(f"❌ Error validating ticket '{ticket}' (HTTP {e.code}): {error_body}")
+        print("⛔ Aborting: No time logs were committed.")
+        sys.exit(1)
+    except URLError as e:
+        print(f"❌ Network error while validating ticket '{ticket}': {e.reason}")
+        print("⛔ Aborting: No time logs were committed.")
+        sys.exit(1)
+
+print("✅ All tickets verified successfully.\n")
+
+# ==========================================
+# COMMIT WORKLOGS
+# ==========================================
+print("🚀 Committing worklogs...")
+has_errors = False
+
+for entry in worklog_entries:
+    ticket = entry['ticket']
+    time_spent = entry['timeSpent']
+    comment = entry['comment']
+
+    print(f"Logging {time_spent} to {ticket}: '{comment}'...")
+
+    payload = {
+        "timeSpent": time_spent,
+        "started": started,
+        "comment": comment
+    }
+    payload_data = json.dumps(payload).encode('utf-8')
+    jira_url = f"{jira_domain}/rest/api/2/issue/{ticket}/worklog"
+    req = urllib.request.Request(jira_url, data=payload_data, headers=headers, method='POST')
+
+    try:
+        with urllib.request.urlopen(req) as response:
+            if response.getcode() == 201:
+                print(f"✅ Successfully logged work for {ticket}.")
+            else:
+                print(f"❌ Failed to log work for {ticket}. HTTP Status: {response.getcode()}")
+                has_errors = True
+    except HTTPError as e:
+        error_body = e.read().decode('utf-8')
+        print(f"❌ Failed to log work for {ticket}. HTTP Status: {e.code}")
+        print(f"   Jira Error: {error_body}")
+        has_errors = True
+    except Exception as e:
+        print(f"❌ Failed to log work for {ticket}. Error: {str(e)}")
+        has_errors = True
 
 # ==========================================
 # FINISH

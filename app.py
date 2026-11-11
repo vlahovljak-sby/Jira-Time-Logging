@@ -104,24 +104,37 @@ def submit():
     with open(time_logging_path, 'w') as f:
         f.write(content)
         
-    with open(date_logging_path, 'w') as f:
-        f.write(content)
-        
     script_output = "Script not found."
     script_success = False
 
     # Trigger external script and WAIT for it to finish
     if os.path.exists(SCRIPT_PATH):
-        # run() waits for the process to finish
-        result = subprocess.run(['python', SCRIPT_PATH], capture_output=True, text=True)
-        # Combine stdout (prints) and stderr (errors)
-        script_output = result.stdout + result.stderr
-        script_success = result.returncode == 0
+        try:
+            result = subprocess.run(['python', SCRIPT_PATH], capture_output=True, text=True)
+            script_output = (result.stdout or '') + (result.stderr or '')
+            script_success = (result.returncode == 0)
+        except Exception as e:
+            script_output = f"Execution error: {str(e)}"
+            script_success = False
 
-    return jsonify({
-        "status": "success" if script_success else "error", 
-        "output": script_output
-    })
+    # Step 3: Handle outcome
+    if script_success:
+        # Only archive when logging to Jira was 100% successful
+        with open(date_logging_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        return jsonify({
+            "status": "success",
+            "output": script_output
+        })
+    else:
+        # Clean up temporary file so no stale data remains on failure
+        if os.path.exists(time_logging_path):
+            os.remove(time_logging_path)
+            
+        return jsonify({
+            "status": "error",
+            "output": script_output
+        })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
